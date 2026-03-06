@@ -6,6 +6,10 @@ using System.Collections;
 
 public class ResourceManager : MonoBehaviour
 {
+    [Header("Generators")]
+    public float num_mineralgenerators = 0;
+    public float num_energygenerators = 0;
+
     [Header("UI Display")]
     public TextMeshProUGUI resourceText;
     public TextMeshProUGUI tutorialText;
@@ -51,13 +55,16 @@ public class ResourceManager : MonoBehaviour
     public float oxygenRefillAmount = 100f; 
     public float maxOxygen = 600f; 
     public bool hasUnlockedOxygen = false;
-    
 
+    private void Start()
+    {
+        
+    }
     void Update()
     {
         // 1. Ramping Resources & Depleting Oxygen
-        currentMinerals += mineralRate * Time.deltaTime;
-        currentEnergy += energyRate * Time.deltaTime;
+        currentMinerals += num_mineralgenerators * (mineralRate * Time.deltaTime);
+        currentEnergy += num_energygenerators * (energyRate * Time.deltaTime);
         currentOxygen -= oxygenDepletionRate * Time.deltaTime;
 
         if (currentOxygen < 0f) currentOxygen = 0f;

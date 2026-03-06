@@ -17,6 +17,9 @@ public class SocketManager : MonoBehaviour
     public TextMeshProUGUI mineral_counterText;
 
     public GameObject generatorParent;
+    public GameObject padParent;
+
+    public ResourceManager manager;
 
     void Start()
     {
@@ -42,11 +45,16 @@ public class SocketManager : MonoBehaviour
             mineral_counterText.text = $"{currResource}/{maxResource} of {resourceName} acquired.";
             if (currResource == maxResource)
             {
-                currGenerators += 1;
+                manager.num_mineralgenerators += 1;
                 generator_counterText.text = $"{currGenerators}/{maxGenerators} crafted.";
                 int gen_i = (int)currGenerators - 1;
                 Transform child = generatorParent.transform.GetChild(gen_i);
-                child.gameObject.SetActive(true);  
+                Transform child_pad = padParent.transform.GetChild(gen_i);
+                child.gameObject.SetActive(true);
+                child_pad.gameObject.SetActive(false);
+
+                currResource = 0;
+                mineral_counterText.text = $"{currResource}/{maxResource} of {resourceName} acquired.";
             }
         }
 
