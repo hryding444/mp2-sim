@@ -3,12 +3,40 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.InputSystem;
 using System.Collections;
+using Unity.XR.CoreUtils;
 
 public class ResourceManager : MonoBehaviour
 {
+    [Header("Input Actions")]
+    public InputActionReference deployMineral;
+    public InputActionReference deployEnergy;
+    public InputActionReference deployOxygen;
+    public InputActionReference increaseMineral;
+
+    public Transform spawnDeath;
+    public XROrigin player;
+
+    public int maxMinGen = 3;
+    public int maxEngGen = 3;
+
+    [Header("Doors")]
+    public EnergyDoor door1;
+    public EnergyDoor2 door2;
+    public EnergyDoor2 door3;
+
     [Header("Generators")]
-    public float num_mineralgenerators = 0;
-    public float num_energygenerators = 0;
+    public int num_mineralgenerators = 0;
+    public int num_energygenerators = 0;
+
+    [Header("Generators")]
+    public GameObject[] mineral_generatorParent;
+    public GameObject[] mineral_padParent;
+
+    public GameObject[] energy_generatorParent;
+    public GameObject[] energy_padParent;
+
+    //public GameObject mineral_generatorParent;
+    //public GameObject mineral_padParent;
 
     [Header("UI Display")]
     public TextMeshProUGUI resourceText;
@@ -29,11 +57,10 @@ public class ResourceManager : MonoBehaviour
     public float energyCooldown = 0f;
     public float oxygenCooldown = 0f;
     
-
     [Header("Resource Rates (Per Second)")]
     public float mineralRate = 1f; 
     public float energyRate = 0f;  
-    public float oxygenDepletionRate = 1f; 
+    public float oxygenDepletionRate = 10f; 
 
     [Header("Exponential Cost Settings")]
     public float costMultiplier = 1.2f; 
@@ -58,7 +85,29 @@ public class ResourceManager : MonoBehaviour
 
     private void Start()
     {
-        
+        deployMineral.action.Enable();
+        deployMineral.action.performed += (ctx) =>
+        {
+            TryDeployMineralGenerator();
+        };
+
+        deployEnergy.action.Enable();
+        deployEnergy.action.performed += (ctx) =>
+        {
+            TryDeployEnergyGenerator();
+        };
+
+        deployOxygen.action.Enable();
+        deployOxygen.action.performed += (ctx) =>
+        {
+            TryRefillOxygen();
+        };
+
+        increaseMineral.action.Enable();
+        increaseMineral.action.performed += (ctx) =>
+        {
+            currentMinerals += 1;
+        };
     }
     void Update()
     {
@@ -81,7 +130,7 @@ public class ResourceManager : MonoBehaviour
         UpdateUIText();
 
         // 4. Keyboard Testing
-        HandleKeyboardInputs();
+        //HandleKeyboardInputs();
     }
 
     // --- LOGIC FUNCTIONS ---
@@ -89,7 +138,7 @@ public class ResourceManager : MonoBehaviour
     void CheckForUnlocks()
     {
         // Unlock Mineral Generator logic (first tutorial)
-        if (currentMinerals >=  mineralGeneratorCost&& !hasUnlockedMineral)
+        if (currentMinerals >=  mineralGeneratorCost && !hasUnlockedMineral)
         {
             hasUnlockedMineral = true;
             ShowTutorial("TIP: Reach " + mineralGeneratorCost + " Minerals to deploy your first Mineral Generator!");
@@ -114,6 +163,23 @@ public class ResourceManager : MonoBehaviour
         {
             ShowTutorial("DANGER: Oxygen Low!");
         }
+
+        if (currentOxygen == 0)
+        {
+            player.transform.position = spawnDeath.transform.position;
+            DelayedAction();
+            #if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+            #else
+                Application.Quit()
+            #endif
+        }
+    }
+
+    IEnumerator DelayedAction()
+    {
+        // Wait for 2 seconds
+        yield return new WaitForSeconds(5.0f);
     }
 
     void ShowTutorial(string message)
@@ -149,15 +215,15 @@ public class ResourceManager : MonoBehaviour
         }
     }
 
-    void HandleKeyboardInputs()
-    {
-        if (Keyboard.current != null)
-        {
-            if (Keyboard.current.digit1Key.wasPressedThisFrame) TryDeployMineralGenerator();
-            if (Keyboard.current.digit2Key.wasPressedThisFrame) TryDeployEnergyGenerator();
-            if (Keyboard.current.digit3Key.wasPressedThisFrame) TryRefillOxygen();
-        }
-    }
+    //void HandleKeyboardInputs()
+    //{
+    //    if (Keyboard.current != null)
+    //    {
+    //        if (Keyboard.current.digit1Key.wasPressedThisFrame) TryDeployMineralGenerator();
+    //        if (Keyboard.current.digit2Key.wasPressedThisFrame) TryDeployEnergyGenerator();
+    //        if (Keyboard.current.digit3Key.wasPressedThisFrame) TryRefillOxygen();
+    //    }
+    //}
 
     // --- DEPLOYMENT FUNCTIONS ---
 
@@ -168,15 +234,32 @@ public class ResourceManager : MonoBehaviour
             Debug.Log("Mineral Generator is on cooldown!");
             return; // Stops the function immediately
         }
-        if (currentMinerals >= mineralGeneratorCost)
+        if (currentMinerals >= mineralGeneratorCost && num_mineralgenerators < maxMinGen)
         {
-            currentMinerals -= mineralGeneratorCost;
-            mineralRate += mineralBoostRate;
-            mineralGeneratorCost *= costMultiplier;
-            SpawnInFront(mineralGeneratorPrefab);
+            if (num_mineralgenerators == 1 && door1.doorOpened)
+            {
+                num_mineralgenerators += 1;
+                currentMinerals -= mineralGeneratorCost;
+                mineralRate += mineralBoostRate;
+                mineralGeneratorCost *= costMultiplier;
+                SpawnGenerators(mineral_generatorParent, mineral_padParent, num_mineralgenerators);
 
-            mineralCooldown = actionCooldownDuration;
-            Debug.Log("Mineral Generator bought!");
+                mineralCooldown = actionCooldownDuration;
+                Debug.Log("Mineral Generator bought!");
+            }
+
+            if (num_mineralgenerators == 2 && door2.doorOpened)
+            {
+                num_mineralgenerators += 1;
+                currentMinerals -= mineralGeneratorCost;
+                mineralRate += mineralBoostRate;
+                mineralGeneratorCost *= costMultiplier;
+                SpawnGenerators(mineral_generatorParent, mineral_padParent, num_mineralgenerators);
+
+                mineralCooldown = actionCooldownDuration;
+                Debug.Log("Mineral Generator bought!");
+            }
+
         }
     }
 
@@ -187,15 +270,42 @@ public class ResourceManager : MonoBehaviour
             Debug.Log("Energy Generator is on cooldown!");
             return; 
         }
-        if (currentMinerals >= energyGeneratorCost)
+        if (currentMinerals >= energyGeneratorCost && num_energygenerators < maxEngGen)
         {
-            currentMinerals -= energyGeneratorCost;
-            energyRate += energyBoostRate;
-            energyGeneratorCost *= costMultiplier;
-            SpawnInFront(energyGeneratorPrefab);
+            if (num_energygenerators == 0)
+            {
+                num_energygenerators += 1;
+                currentMinerals -= energyGeneratorCost;
+                energyRate += energyBoostRate + 1;
+                energyGeneratorCost *= costMultiplier;
+                SpawnGenerators(energy_generatorParent, energy_padParent, num_energygenerators);
 
-            energyCooldown = actionCooldownDuration;
-            Debug.Log("Energy Generator deployed!");
+                energyCooldown = actionCooldownDuration;
+                Debug.Log("Energy Generator deployed!");
+            }
+
+            if (num_energygenerators == 1 && door1.doorOpened)
+            {
+                num_energygenerators += 1;
+                currentMinerals -= energyGeneratorCost;
+                energyRate += energyBoostRate;
+                energyGeneratorCost *= costMultiplier;
+                SpawnGenerators(energy_generatorParent, energy_padParent, num_energygenerators);
+
+                energyCooldown = actionCooldownDuration;
+                Debug.Log("Energy Generator deployed!");
+            }
+            if (num_energygenerators == 2 && door2.doorOpened)
+            {
+                num_energygenerators += 1;
+                currentMinerals -= energyGeneratorCost;
+                energyRate += energyBoostRate;
+                energyGeneratorCost *= costMultiplier;
+                SpawnGenerators(energy_generatorParent, energy_padParent, num_energygenerators);
+
+                energyCooldown = actionCooldownDuration;
+                Debug.Log("Energy Generator deployed!");
+            }
         }
     }
 
@@ -216,15 +326,12 @@ public class ResourceManager : MonoBehaviour
         }
     }
 
-    void SpawnInFront(GameObject prefab)
+    void SpawnGenerators(GameObject[] parent, GameObject[] pad_parent, int count)
     {
-        if (prefab != null)
-        {
-            Transform playerHead = Camera.main.transform;
-            Vector3 spawnPosition = playerHead.position + (playerHead.forward * 1.5f);
-            spawnPosition.y -= 0.5f;
-            Instantiate(prefab, spawnPosition, playerHead.rotation);
-        }
+        GameObject child = parent[count-1];
+        GameObject child_pad = pad_parent[count - 1];
+        child.gameObject.SetActive(true);
+        child_pad.gameObject.SetActive(false);
     }
 
     private IEnumerator ClearTutorialAfterDelay()

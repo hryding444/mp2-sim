@@ -35,13 +35,13 @@ public class EnergyDoor : MonoBehaviour
         {
             leftDoor.localPosition = Vector3.Lerp(
                 leftDoor.localPosition,
-                leftClosed - leftDoor.right * openDistance,
+                leftClosed + leftDoor.right * openDistance,
                 Time.deltaTime * openSpeed
             );
 
             rightDoor.localPosition = Vector3.Lerp(
                 rightDoor.localPosition,
-                rightClosed + rightDoor.right * openDistance,
+                rightClosed - rightDoor.right * openDistance,
                 Time.deltaTime * openSpeed
             );
         }

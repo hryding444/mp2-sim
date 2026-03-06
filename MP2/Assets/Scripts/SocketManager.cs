@@ -30,7 +30,7 @@ public class SocketManager : MonoBehaviour
         });
 
         // text
-        generator_counterText.text = $"{currGenerators}/{maxGenerators} crafted.";
+        //generator_counterText.text = $"{currGenerators}/{maxGenerators} crafted.";
         mineral_counterText.text = $"{currResource}/{maxResource} of {resourceName} acquired.";
     }
 
@@ -45,8 +45,9 @@ public class SocketManager : MonoBehaviour
             mineral_counterText.text = $"{currResource}/{maxResource} of {resourceName} acquired.";
             if (currResource == maxResource)
             {
+                currGenerators += 1;
                 manager.num_mineralgenerators += 1;
-                generator_counterText.text = $"{currGenerators}/{maxGenerators} crafted.";
+                //generator_counterText.text = $"{currGenerators}/{maxGenerators} crafted.";
                 int gen_i = (int)currGenerators - 1;
                 Transform child = generatorParent.transform.GetChild(gen_i);
                 Transform child_pad = padParent.transform.GetChild(gen_i);
