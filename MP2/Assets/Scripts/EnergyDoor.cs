@@ -16,6 +16,8 @@ public class EnergyDoor : MonoBehaviour
 
     Vector3 leftClosed;
     Vector3 rightClosed;
+    public int doornum;
+    public EnergyDoor2 door1;
 
     void Start()
     {
@@ -25,10 +27,13 @@ public class EnergyDoor : MonoBehaviour
 
     void Update()
     {
-        if (!doorOpened && resourceManager.currentEnergy >= requiredEnergy)
+        if (doornum == 2)
         {
-            doorOpened = true;
-            Debug.Log("Door unlocked!");
+            if (!doorOpened && resourceManager.currentEnergy >= requiredEnergy && door1.doorOpened)
+            {
+                doorOpened = true;
+                Debug.Log("Door unlocked!");
+            }
         }
 
         if (doorOpened)

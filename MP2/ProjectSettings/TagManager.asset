@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 3
   tags:
   - Mineral
+  - MineralPro
   layers:
   - Default
   - TransparentFX

@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine.InputSystem;
 using System.Collections;
 using Unity.XR.CoreUtils;
+using UnityEngine.SceneManagement;
 
 public class ResourceManager : MonoBehaviour
 {
@@ -20,8 +21,8 @@ public class ResourceManager : MonoBehaviour
     public int maxEngGen = 3;
 
     [Header("Doors")]
-    public EnergyDoor door1;
-    public EnergyDoor2 door2;
+    public EnergyDoor2 door1;
+    public EnergyDoor door2;
     public EnergyDoor2 door3;
 
     [Header("Generators")]
@@ -166,13 +167,7 @@ public class ResourceManager : MonoBehaviour
 
         if (currentOxygen == 0)
         {
-            player.transform.position = spawnDeath.transform.position;
-            DelayedAction();
-            #if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-            #else
-                Application.Quit()
-            #endif
+            SceneManager.LoadScene("Death");
         }
     }
 
@@ -209,8 +204,8 @@ public class ResourceManager : MonoBehaviour
             string oxyStatus = oxygenCooldown > 0 ? $"Wait: {oxygenCooldown:F1}s" : "Ready";
 
             resourceText.text = 
-                $"Minerals: {Mathf.FloorToInt(currentMinerals)} (rate: {mineralRate}/s) | Min Gen: [{minStatus}]\n" +
-                $"Energy: {Mathf.FloorToInt(currentEnergy)} (rate: {energyRate}/s) | Eng Gen: [{engStatus}]\n" +
+                $"Minerals: {Mathf.FloorToInt(currentMinerals)} (rate: {mineralRate}/s) | Min Gen: [{minStatus}]\n" + $" | Current Cost: {mineralGeneratorCost}" + 
+                $"Energy: {Mathf.FloorToInt(currentEnergy)} (rate: {energyRate}/s) | Eng Gen: [{engStatus}]\n" + $" | Current Cost: {energyGeneratorCost}" +
                 $"Oxygen: {Mathf.FloorToInt(currentOxygen)} (rate: -{oxygenDepletionRate}/s) | Oxy Refill: [{oxyStatus}]";
         }
     }
@@ -236,6 +231,17 @@ public class ResourceManager : MonoBehaviour
         }
         if (currentMinerals >= mineralGeneratorCost && num_mineralgenerators < maxMinGen)
         {
+            if (num_mineralgenerators == 0)
+            {
+                num_mineralgenerators += 1;
+                currentMinerals -= mineralGeneratorCost;
+                mineralRate += mineralBoostRate;
+                mineralGeneratorCost *= costMultiplier;
+                SpawnGenerators(mineral_generatorParent, mineral_padParent, num_mineralgenerators);
+
+                mineralCooldown = actionCooldownDuration;
+                Debug.Log("Mineral Generator bought!");
+            } 
             if (num_mineralgenerators == 1 && door1.doorOpened)
             {
                 num_mineralgenerators += 1;
